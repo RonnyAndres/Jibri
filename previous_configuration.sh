@@ -14,13 +14,13 @@ sudo ufw allow 10000/udp
 sudo ufw reload
 
 # Descargar el instalador de Jitsi y Jibri
-#wget -T 10 -O jitsi-jibri-installer https://raw.githubusercontent.com/jitsi-contrib/installers/main/jitsi-jibri-installer
+wget -T 10 -O jitsi-jibri-installer https://raw.githubusercontent.com/jitsi-contrib/installers/main/jitsi-jibri-installer
 
 # Establecer variables de entorno
 export JITSI_HOST=www.zeroebs.com
 export TURN_HOST=turn.zeroebs.com
-export JITSI_IP=localhost
-export DONT_SET_LETSENCRYPT=false
+export JITSI_IP=192.168.15.146
+export DONT_SET_LETSENCRYPT=true
 
 # Dar permisos de ejecución al instalador
 bash jitsi-jibri-installer

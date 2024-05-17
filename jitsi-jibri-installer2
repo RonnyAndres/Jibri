@@ -848,7 +848,7 @@ timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-conf-jitsi-meet" \
 # -----------------------------------------------------------------------------
 # nginx
 # -----------------------------------------------------------------------------
-    out <<< "configuring Nginx..."
+out <<< "configuring Nginx..."
 
 mkdir -p /etc/systemd/system/nginx.service.d
 wget -T 10 -O /etc/systemd/system/nginx.service.d/override.conf \
@@ -870,10 +870,6 @@ wget -T 10 -O /etc/nginx/sites-available/$JITSI_HOST.conf \
 sed -i "s/___JITSI_HOST___/$JITSI_HOST/" $NGINX_CONFIG
 sed -i "s/___TURN_HOST___/$TURN_HOST/" $NGINX_CONFIG
 
-# Añadir las líneas para utilizar los certificados personalizados
-echo "ssl_certificate $CERT_CRT;" >> $NGINX_CONFIG
-echo "ssl_certificate_key $CERT_KEY;" >> $NGINX_CONFIG
-
 ln -s /usr/local/share/nginx/modules-available/jitsi-meet.conf \
     /etc/nginx/modules-enabled/99-jitsi-meet-custom.conf
 rm /etc/nginx/sites-enabled/default
@@ -891,6 +887,7 @@ systemctl start nginx.service
 # nginx config is ok
 timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-conf-nginx" \
     >/dev/null || true
+
 
 # -----------------------------------------------------------------------------
 # jvb
@@ -968,27 +965,17 @@ timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-excalidraw" \
 # lets encrypt
 # -----------------------------------------------------------------------------
 if [[ "$DONT_SET_LETSENCRYPT" != true ]]; then
-    out <<< "setting Let's Encrypt certificates..."
+    out <<< "using custom SSL certificates..."
 
-    certbot certonly --dry-run --non-interactive -m info@$JITSI_HOST \
-        --agree-tos --duplicate --webroot -w /usr/share/jitsi-meet \
-        -d $JITSI_HOST,$TURN_HOST || true
-
-    sleep 3
-
-    certbot certonly --non-interactive -m info@$JITSI_HOST \
-        --agree-tos --duplicate --webroot -w /usr/share/jitsi-meet \
-        -d $JITSI_HOST,$TURN_HOST
-
+    # Remover enlaces simbólicos existentes
     rm -f /etc/jitsi/meet/$JITSI_HOST.crt
     rm -f /etc/jitsi/meet/$JITSI_HOST.key
-    ln -s /etc/letsencrypt/live/$JITSI_HOST/fullchain.pem \
-        /etc/jitsi/meet/$JITSI_HOST.crt
-    ln -s /etc/letsencrypt/live/$JITSI_HOST/privkey.pem \
-        /etc/jitsi/meet/$JITSI_HOST.key
+    rm -f /etc/jitsi/meet/$JITSI_HOST.ca
 
-    out <<< "restarting Certbot..."
-    systemctl restart certbot.service
+    # Crear nuevos enlaces simbólicos a tus certificados
+    ln -s /home/ronny/Jibri/www.zeroebs.com.crt /etc/jitsi/meet/$JITSI_HOST.crt
+    ln -s /home/ronny/Jibri/www.zeroebs.com.key /etc/jitsi/meet/$JITSI_HOST.key
+    ln -s /home/ronny/Jibri/www.zeroebs.com.ca /etc/jitsi/meet/$JITSI_HOST.ca
 
     out <<< "restarting Coturn..."
     systemctl restart coturn.service
@@ -1000,6 +987,7 @@ if [[ "$DONT_SET_LETSENCRYPT" != true ]]; then
     timeout 8 curl -s "$CHECKMYPORT?proto=udp&port=60000&text=ok-tls" \
         >/dev/null || true
 fi
+
 
 
 # -----------------------------------------------------------------------------
